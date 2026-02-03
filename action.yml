@@ -17,10 +17,6 @@ inputs:
   jira_token:
     description: JIRA user token
     required: true
-  release_name_format:
-    description: Format string for the release name. Use {version} as placeholder for the git tag name. The format string must contain {version}. Examples 'Release {version}' or '{version}-prod'
-    required: false
-    default: '{version}'
 runs:
   using: composite
   steps:
@@ -49,5 +45,4 @@ runs:
         INPUT_JIRA_PROJECT: ${{ inputs.jira_project }}
         INPUT_JIRA_USER: ${{ inputs.jira_user }}
         INPUT_JIRA_TOKEN: ${{ inputs.jira_token }}
-        INPUT_RELEASE_NAME_FORMAT: ${{ inputs.release_name_format }}
       run: python ./src/main.py

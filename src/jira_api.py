@@ -28,45 +28,20 @@ def put(endpoint, body):
 
 
 def get_project_id():
-    resp = requests.get(
-        f"{base_url}project/{PROJECT}",
-        auth=auth,
-    )
-    resp.raise_for_status()
-    return resp.json()["id"]
+    return get("")["id"]
 
-def get_project_versions():
-    project_id = get_project_id()
-    resp = requests.get(
-        f"{base_url}project/{project_id}/versions",
-        auth=auth,
-    )
-    resp.raise_for_status()
-    return resp.json()
 
 def get_or_create_release(release_name):
-    versions = get_project_versions()
-
-    matches = [v for v in versions if v.get("name") == release_name]
-
-    if not matches:
-        resp = post(
+    result = get("version", {"query": release_name})
+    if result["total"] == 0:
+        return post(
             "version",
             {"name": release_name, "projectId": get_project_id()},
-        )
-        created = resp.json()
-
-        if "errorMessages" in created or "errors" in created:
-            raise Exception(
-                f"Jira API error while creating version '{release_name}': {created}"
-            )
-
-        return created
-
-    if len(matches) > 1:
-        raise Exception(f"Found multiple releases with the same name: {release_name}")
-
-    return matches[0]
+        ).json()
+    elif result["total"] > 1:
+        raise Exception("Found multiple releases with the same name.")
+    else:
+        return result["values"][0]
 
 
 def add_release_to_issue(release_name, issue):
