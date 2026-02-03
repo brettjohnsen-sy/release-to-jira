@@ -39,7 +39,7 @@ def get_or_create_release(release_name):
             {"name": release_name, "projectId": get_project_id()},
         ).json()
     elif result["total"] > 1:
-        raise Exception("Found multiple releases with the same name.")
+        raise Exception(f"Found multiple releases with the same name: {release_name}")
     else:
         return result["values"][0]
 
