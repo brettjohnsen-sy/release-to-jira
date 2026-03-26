@@ -2,7 +2,7 @@ import os
 import re
 
 PROJECT = os.environ["INPUT_JIRA_PROJECT"]
-ISSUE_PATTERN = rf"{PROJECT}-[0-9]+"
+ISSUE_PATTERN = rf"{PROJECT}-[1-9][0-9]*"
 CHANGES_SECTION = "What's Changed"
 
 
