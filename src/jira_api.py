@@ -1,4 +1,5 @@
 import os
+import re
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -69,7 +70,17 @@ def get_or_create_release(release_name):
     return matches[0]
 
 
+def is_valid_issue_key(issue):
+    """Return True only if issue matches the expected PROJECT-<non-zero-number> format."""
+    if not issue:
+        return False
+    return bool(re.fullmatch(rf"{re.escape(PROJECT)}-[1-9][0-9]*", issue))
+
+
 def add_release_to_issue(release_name, issue):
+    if not is_valid_issue_key(issue):
+        print(f"Warning: skipping invalid or placeholder issue key '{issue}'")
+        return False
     response = put(
         f"issue/{issue}",
         {"update": {"fixVersions": [{"add": {"name": release_name}}]}},
