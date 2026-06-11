@@ -25,6 +25,10 @@ inputs:
     description: "Regex pattern to extract version from tag. Use a capture group () to specify the version part. If not provided, uses the tag name as-is. Examples: 'release/prod/(.+)-RC\\.\\d+' or 'v(.+)'"
     required: false
     default: ''
+  tag_name:
+    description: "Git tag to create the release for. Defaults to the tag that triggered the workflow (github.ref_name). Set this when running via workflow_dispatch to (re)run the release for an existing tag."
+    required: false
+    default: ''
 runs:
   using: composite
   steps:
@@ -34,15 +38,16 @@ runs:
       working-directory: ${{ github.action_path }}
       env:
         GH_TOKEN: ${{ github.token }}
+        TAG_NAME: ${{ inputs.tag_name || github.ref_name }}
       run: |
         gh api \
-          --method GET /repos/${{ github.repository }}/releases/tags/${{ github.ref_name }} \
+          --method GET "/repos/${{ github.repository }}/releases/tags/$TAG_NAME" \
           --jq .body > notes.md \
         || \
         gh api \
           --method POST /repos/${{ github.repository }}/releases \
-            -f tag_name='${{ github.ref_name }}' \
-            -f name='${{ github.ref_name }}' \
+            -f tag_name="$TAG_NAME" \
+            -f name="$TAG_NAME" \
             -F generate_release_notes=true \
           --jq .body > notes.md
     - name: Update Jira
@@ -57,4 +62,5 @@ runs:
         INPUT_TAG_FORMAT: ${{ inputs.tag_format }}
         GITHUB_TOKEN: ${{ github.token }}
         GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_REF_NAME: ${{ inputs.tag_name || github.ref_name }}
       run: python ./src/main.py
