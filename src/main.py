@@ -8,7 +8,7 @@ from version_utils import extract_version_number
 
 
 # Get the git tag name
-tag_name = os.environ["GITHUB_REF_NAME"]
+tag_name = os.environ["RELEASE_TAG_NAME"]
 
 # Get the tag format pattern (optional)
 tag_format = os.environ.get("INPUT_TAG_FORMAT") or None
