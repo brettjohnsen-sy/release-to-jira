@@ -40,16 +40,25 @@ runs:
         GH_TOKEN: ${{ github.token }}
         TAG_NAME: ${{ inputs.tag_name || github.ref_name }}
       run: |
-        gh api \
-          --method GET "/repos/${{ github.repository }}/releases/tags/$TAG_NAME" \
-          --jq .body > notes.md \
-        || \
-        gh api \
-          --method POST /repos/${{ github.repository }}/releases \
-            -f tag_name="$TAG_NAME" \
-            -f name="$TAG_NAME" \
-            -F generate_release_notes=true \
-          --jq .body > notes.md
+        REPO="${{ github.repository }}"
+        if gh api --method GET "/repos/$REPO/releases/tags/$TAG_NAME" --jq .body > notes.md 2>/dev/null; then
+          echo "Release already exists for $TAG_NAME"
+        else
+          # Diff against the latest published release so notes cover only this
+          # release's changes. Without previous_tag_name GitHub's auto-detection
+          # can miss non-semver tags (e.g. release/prod/X-RC.N) and dump the
+          # entire repo history, blowing past the 125k release-body limit (422).
+          PREV=$(gh api "/repos/$REPO/releases/latest" --jq .tag_name 2>/dev/null || true)
+          echo "Creating release $TAG_NAME (previous tag: ${PREV:-none})"
+          NOTES_ARGS=(-f tag_name="$TAG_NAME")
+          [ -n "$PREV" ] && NOTES_ARGS+=(-f previous_tag_name="$PREV")
+          gh api --method POST "/repos/$REPO/releases/generate-notes" \
+            "${NOTES_ARGS[@]}" --jq .body > notes_full.md
+          # Safety net: truncate to stay under GitHub's 125k body limit even if
+          # the diff is still large (avoid `| head` so pipefail can't trip on SIGPIPE).
+          head -c 120000 notes_full.md > notes.md
+          gh release create "$TAG_NAME" --repo "$REPO" --title "$TAG_NAME" --notes-file notes.md
+        fi
     - name: Update Jira
       shell: bash
       working-directory: ${{ github.action_path }}
