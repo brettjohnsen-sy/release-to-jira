@@ -71,5 +71,8 @@ runs:
         INPUT_TAG_FORMAT: ${{ inputs.tag_format }}
         GITHUB_TOKEN: ${{ github.token }}
         GITHUB_REPOSITORY: ${{ github.repository }}
-        GITHUB_REF_NAME: ${{ inputs.tag_name || github.ref_name }}
+        # Not GITHUB_REF_NAME: that name is reserved and the runner ignores the
+        # override, leaking the run's ref (a branch on workflow_dispatch) instead
+        # of the resolved tag.
+        RELEASE_TAG_NAME: ${{ inputs.tag_name || github.ref_name }}
       run: python ./src/main.py
